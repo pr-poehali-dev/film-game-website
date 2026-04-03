@@ -27,17 +27,20 @@ export default function CatalogPage({ onNavigate }: CatalogPageProps) {
   const [yearFrom, setYearFrom] = useState(MIN_YEAR);
   const [yearTo, setYearTo] = useState(MAX_YEAR);
   const [showYearFilter, setShowYearFilter] = useState(false);
+  const [minRating, setMinRating] = useState(0);
+  const [showRatingFilter, setShowRatingFilter] = useState(false);
 
   const filtered = useMemo(() => {
     let list = [...catalogMovies];
     if (search) list = list.filter(m => m.title.toLowerCase().includes(search.toLowerCase()));
     if (genre !== "Все") list = list.filter(m => m.genre === genre);
     list = list.filter(m => m.year >= yearFrom && m.year <= yearTo);
+    if (minRating > 0) list = list.filter(m => m.rating >= minRating);
     if (sort === "rating") list.sort((a, b) => b.rating - a.rating);
     else if (sort === "year") list.sort((a, b) => b.year - a.year);
     else list.sort((a, b) => a.title.localeCompare(b.title, "ru"));
     return list;
-  }, [search, genre, sort, yearFrom, yearTo]);
+  }, [search, genre, sort, yearFrom, yearTo, minRating]);
 
   const paginated = filtered.slice(0, page * PAGE_SIZE);
   const hasMore = paginated.length < filtered.length;
@@ -103,6 +106,24 @@ export default function CatalogPage({ onNavigate }: CatalogPageProps) {
             {sortOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
 
+          {/* Rating filter toggle */}
+          <button
+            onClick={() => setShowRatingFilter(v => !v)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-golos text-sm transition-all"
+            style={showRatingFilter || minRating > 0 ? {
+              background: 'rgba(255,238,0,0.15)',
+              border: '1px solid var(--neon-yellow)',
+              color: 'var(--neon-yellow)'
+            } : {
+              background: 'var(--dark-card)',
+              border: '1px solid var(--dark-border)',
+              color: '#94a3b8'
+            }}
+          >
+            <Icon name="Star" size={14} />
+            {minRating > 0 ? `от ${minRating}★` : "Рейтинг"}
+          </button>
+
           {/* Year filter toggle */}
           <button
             onClick={() => setShowYearFilter(v => !v)}
@@ -121,6 +142,71 @@ export default function CatalogPage({ onNavigate }: CatalogPageProps) {
             {yearFrom === MIN_YEAR && yearTo === MAX_YEAR ? "Год" : `${yearFrom}–${yearTo}`}
           </button>
         </div>
+
+        {/* Rating filter panel */}
+        {showRatingFilter && (
+          <div className="max-w-7xl mx-auto mt-3 p-4 rounded-xl animate-fade-in"
+            style={{ background: 'var(--dark-card)', border: '1px solid var(--dark-border)' }}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-golos text-sm text-gray-400">Минимальный рейтинг</span>
+              <div className="flex items-center gap-2">
+                <span className="font-bebas text-2xl" style={{ color: 'var(--neon-yellow)' }}>
+                  {minRating > 0 ? `${minRating}+` : "Все"}
+                </span>
+                {minRating > 0 && (
+                  <button
+                    onClick={() => { setMinRating(0); setPage(1); }}
+                    className="text-xs font-golos text-gray-500 hover:text-white transition-colors underline"
+                  >
+                    Сбросить
+                  </button>
+                )}
+              </div>
+            </div>
+            {/* Slider */}
+            <input
+              type="range"
+              min={0}
+              max={9.5}
+              step={0.5}
+              value={minRating}
+              onChange={e => { setMinRating(Number(e.target.value)); setPage(1); }}
+              className="w-full cursor-pointer mb-1"
+              style={{ accentColor: 'var(--neon-yellow)' }}
+            />
+            <div className="flex justify-between font-golos text-xs text-gray-600 mb-3">
+              <span>Все</span><span>9.5★</span>
+            </div>
+            {/* Quick presets */}
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: "Все", val: 0 },
+                { label: "5.0+", val: 5.0 },
+                { label: "6.0+", val: 6.0 },
+                { label: "7.0+", val: 7.0 },
+                { label: "8.0+", val: 8.0 },
+                { label: "9.0+", val: 9.0 },
+              ].map(p => (
+                <button
+                  key={p.label}
+                  onClick={() => { setMinRating(p.val); setPage(1); }}
+                  className="px-3 py-1 rounded-full font-golos text-xs transition-all flex items-center gap-1"
+                  style={minRating === p.val ? {
+                    background: 'var(--neon-yellow)',
+                    color: '#000'
+                  } : {
+                    background: 'var(--dark-bg)',
+                    border: '1px solid var(--dark-border)',
+                    color: '#94a3b8'
+                  }}
+                >
+                  {p.val > 0 && <Icon name="Star" size={10} style={{ fill: minRating === p.val ? '#000' : 'var(--neon-yellow)', color: minRating === p.val ? '#000' : 'var(--neon-yellow)' }} />}
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Year range slider */}
         {showYearFilter && (
