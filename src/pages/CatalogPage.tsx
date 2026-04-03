@@ -6,14 +6,14 @@ interface CatalogPageProps {
   onNavigate: (page: string, data?: unknown) => void;
 }
 
-const genres = ["Все", "Фантастика", "Боевик", "Приключения", "Триллер", "Ужасы"];
+const genres = ["Все", "Фантастика"];
 const sortOptions = [
   { value: "rating", label: "По рейтингу" },
   { value: "year", label: "По году" },
   { value: "title", label: "По алфавиту" },
 ];
 
-const PAGE_SIZE = 40;
+const PAGE_SIZE = 60;
 
 export default function CatalogPage({ onNavigate }: CatalogPageProps) {
   const [search, setSearch] = useState("");
