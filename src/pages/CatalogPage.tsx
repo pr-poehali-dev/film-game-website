@@ -15,22 +15,29 @@ const sortOptions = [
 
 const PAGE_SIZE = 60;
 
+const MIN_YEAR = 1975;
+const MAX_YEAR = 2024;
+
 export default function CatalogPage({ onNavigate }: CatalogPageProps) {
   const [search, setSearch] = useState("");
   const [genre, setGenre] = useState("Все");
   const [sort, setSort] = useState("rating");
   const [page, setPage] = useState(1);
   const [hovered, setHovered] = useState<number | null>(null);
+  const [yearFrom, setYearFrom] = useState(MIN_YEAR);
+  const [yearTo, setYearTo] = useState(MAX_YEAR);
+  const [showYearFilter, setShowYearFilter] = useState(false);
 
   const filtered = useMemo(() => {
     let list = [...catalogMovies];
     if (search) list = list.filter(m => m.title.toLowerCase().includes(search.toLowerCase()));
     if (genre !== "Все") list = list.filter(m => m.genre === genre);
+    list = list.filter(m => m.year >= yearFrom && m.year <= yearTo);
     if (sort === "rating") list.sort((a, b) => b.rating - a.rating);
     else if (sort === "year") list.sort((a, b) => b.year - a.year);
     else list.sort((a, b) => a.title.localeCompare(b.title, "ru"));
     return list;
-  }, [search, genre, sort]);
+  }, [search, genre, sort, yearFrom, yearTo]);
 
   const paginated = filtered.slice(0, page * PAGE_SIZE);
   const hasMore = paginated.length < filtered.length;
@@ -95,7 +102,107 @@ export default function CatalogPage({ onNavigate }: CatalogPageProps) {
           >
             {sortOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
+
+          {/* Year filter toggle */}
+          <button
+            onClick={() => setShowYearFilter(v => !v)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-golos text-sm transition-all"
+            style={showYearFilter || yearFrom !== MIN_YEAR || yearTo !== MAX_YEAR ? {
+              background: 'rgba(255,0,128,0.15)',
+              border: '1px solid var(--neon-pink)',
+              color: 'var(--neon-pink)'
+            } : {
+              background: 'var(--dark-card)',
+              border: '1px solid var(--dark-border)',
+              color: '#94a3b8'
+            }}
+          >
+            <Icon name="Calendar" size={14} />
+            {yearFrom === MIN_YEAR && yearTo === MAX_YEAR ? "Год" : `${yearFrom}–${yearTo}`}
+          </button>
         </div>
+
+        {/* Year range slider */}
+        {showYearFilter && (
+          <div className="max-w-7xl mx-auto mt-3 p-4 rounded-xl animate-fade-in"
+            style={{ background: 'var(--dark-card)', border: '1px solid var(--dark-border)' }}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-golos text-sm text-gray-400">Год выпуска</span>
+              <div className="flex items-center gap-2">
+                <span className="font-bebas text-xl" style={{ color: 'var(--neon-pink)' }}>{yearFrom}</span>
+                <span className="text-gray-600">—</span>
+                <span className="font-bebas text-xl" style={{ color: 'var(--neon-pink)' }}>{yearTo}</span>
+                {(yearFrom !== MIN_YEAR || yearTo !== MAX_YEAR) && (
+                  <button
+                    onClick={() => { setYearFrom(MIN_YEAR); setYearTo(MAX_YEAR); setPage(1); }}
+                    className="ml-2 text-xs font-golos text-gray-500 hover:text-white transition-colors underline"
+                  >
+                    Сбросить
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block font-golos text-xs text-gray-500 mb-1">От: {yearFrom}</label>
+                <input
+                  type="range"
+                  min={MIN_YEAR}
+                  max={yearTo}
+                  value={yearFrom}
+                  onChange={e => { setYearFrom(Number(e.target.value)); setPage(1); }}
+                  className="w-full accent-pink-500 cursor-pointer"
+                  style={{ accentColor: 'var(--neon-pink)' }}
+                />
+                <div className="flex justify-between font-golos text-xs text-gray-600 mt-0.5">
+                  <span>{MIN_YEAR}</span><span>{yearTo}</span>
+                </div>
+              </div>
+              <div>
+                <label className="block font-golos text-xs text-gray-500 mb-1">До: {yearTo}</label>
+                <input
+                  type="range"
+                  min={yearFrom}
+                  max={MAX_YEAR}
+                  value={yearTo}
+                  onChange={e => { setYearTo(Number(e.target.value)); setPage(1); }}
+                  className="w-full cursor-pointer"
+                  style={{ accentColor: 'var(--neon-pink)' }}
+                />
+                <div className="flex justify-between font-golos text-xs text-gray-600 mt-0.5">
+                  <span>{yearFrom}</span><span>{MAX_YEAR}</span>
+                </div>
+              </div>
+            </div>
+            {/* Quick decade buttons */}
+            <div className="flex flex-wrap gap-2 mt-3">
+              {[
+                { label: "70-е", from: 1975, to: 1979 },
+                { label: "80-е", from: 1980, to: 1989 },
+                { label: "90-е", from: 1990, to: 1999 },
+                { label: "2000-е", from: 2000, to: 2009 },
+                { label: "2010-е", from: 2010, to: 2019 },
+                { label: "2020+", from: 2020, to: 2024 },
+              ].map(d => (
+                <button
+                  key={d.label}
+                  onClick={() => { setYearFrom(d.from); setYearTo(d.to); setPage(1); }}
+                  className="px-3 py-1 rounded-full font-golos text-xs transition-all"
+                  style={yearFrom === d.from && yearTo === d.to ? {
+                    background: 'var(--neon-pink)',
+                    color: '#000'
+                  } : {
+                    background: 'var(--dark-bg)',
+                    border: '1px solid var(--dark-border)',
+                    color: '#94a3b8'
+                  }}
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Grid */}
